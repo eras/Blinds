@@ -1,9 +1,15 @@
 // -*- mode: c++ -*-
-int pins[] = { 9, 10, 11, 12 };
+int pins[] = { 10, 9, 12, 11 };
+int motor1_pins[] = { 1, 2, 3, 4 };
 const int num_pins = sizeof(pins) / sizeof(*pins);
 long unsigned step_interval = 200000;
 const bool powersave = true;
 const int full_revolution = 509;
+
+#define MOTOR1_PORT PORTB
+#define MOTOR1_DDR DDRB
+//#define MOTOR1_SET(VALUE) do { MOTOR1_PORT = (MOTOR1_PORT & (~MOTOR1_MASK)) | (VALUE); } while (0)
+#define MOTOR1_SET(VALUE) do { MOTOR1_PORT = (VALUE); } while (0)
 
 const int sw1_pin = 6;
 const int sw2_pin = 7;
@@ -110,15 +116,34 @@ const int sequence_xor = 0x00;
 
 const int len_sequence = sizeof(sequence) / sizeof(*sequence);
 
-const int led = 13;
+unsigned char motor1_bits[len_sequence];
+
+const int led = 2;
 
 int at_seq = 0;
-int cur_state = 0;
 
 void reset_pins()
 {
-  for (int c = 0; c < num_pins; ++c) {
-    digitalWrite(pins[c], LOW);
+  MOTOR1_SET(0);
+}
+
+
+void setup_motor1()
+{
+  unsigned ddr = 0u;
+  for (int pin = 0; pin < num_pins; ++pin) {
+    ddr |= (1u << motor1_pins[pin]);
+  }
+  MOTOR1_DDR |= ddr;
+  for (int at = 0; at < len_sequence; ++at) {
+    unsigned char value = 0;
+    int state = sequence[at];
+    for (int pin = 0; pin < num_pins; ++pin) {
+      if (state & (1u << pin)) {
+        value |= (1u << motor1_pins[pin]);
+      }
+    }
+    motor1_bits[at] = value;
   }
 }
 
@@ -127,12 +152,14 @@ void setup() {
   Serial.begin(115200); 
   Serial.println("START " VERSION);
   // set the digital pin as output:
-  for (int c = 0; c < num_pins; ++c) {
-    pinMode(pins[c], OUTPUT);
-  }
+  // for (int c = 0; c < num_pins; ++c) {
+  //   pinMode(pins[c], OUTPUT);
+  // }
   pinMode(led, OUTPUT);
   pinMode(sw1_pin, INPUT);
   pinMode(sw2_pin, INPUT);
+
+  setup_motor1();
   reset_pins();
 }
 
@@ -140,7 +167,7 @@ void turn(int direction)
 {
   for (int c = 0; c < len_sequence; ++c) {
     //Serial.print(".");
-    digitalWrite(led, at_seq == 0 ? HIGH : LOW);
+    //digitalWrite(led, at_seq == 0 ? HIGH : LOW);
     if (direction) {
       ++at_seq;
       if (at_seq == len_sequence) {
@@ -153,15 +180,7 @@ void turn(int direction)
         --at_seq;
       }
     }
-    int state = sequence[at_seq] ^ sequence_xor;
-    int changed = state ^ cur_state;
-    for (int c = 0; c < num_pins; ++c) {
-      if (changed & (1 << c)) {
-        int value = state & (1 << c) ? HIGH : LOW;
-        digitalWrite(pins[c], value);
-      }
-    }
-    cur_state = state;
+    MOTOR1_SET(motor1_bits[at_seq]);
     if (step_interval > 30000) {
       delay(step_interval >> 10);
     } else {
@@ -182,6 +201,7 @@ enum overshoot_state {
 void next_pin_order()
 {
   next_permutation(pins, pins + num_pins);
+  setup_motor1();
 }
 
 void dump_pin_order()
@@ -251,7 +271,8 @@ void loop()
       }
     }
   }
-  if (turning == 0) {
+  if (overshoot == OVERSHOOT_NONE) {
+#if 0
     if (digitalRead(sw1_pin)) {
       if (!open()) {
         close();
@@ -259,6 +280,7 @@ void loop()
     } else if (digitalRead(sw2_pin)) {
       open();
     }
+#endif
   }
   if (Serial.available()) {
     char ch = Serial.read();
@@ -320,6 +342,10 @@ void loop()
       }
       Serial.print("Step interval: ");
       Serial.println(step_interval);
+    } else if (ch == 'd') {
+      for (int c = 0; c < len_sequence; ++c) {
+        Serial.println((unsigned int) motor1_bits[c]);
+      }
     }
   }
 }
