@@ -270,6 +270,20 @@ void loop()
       orientation = 0;
     } else if (ch == 'n') {
       dump_pin_order();
+    } else if (ch == '+') {
+      step_interval += 100;
+      if (step_interval > 1000) {
+        step_interval = 1000;
+      }
+      Serial.print("Step interval: ");
+      Serial.println(step_interval);
+    } else if (ch == '-') {
+      step_interval -= 100;
+      if (step_interval < 100) {
+        step_interval = 100;
+      }
+      Serial.print("Step interval: ");
+      Serial.println(step_interval);
     }
   }
 }
