@@ -122,7 +122,7 @@ void reset_pins()
 
 
 void setup() {
-  Serial.begin(9600); 
+  Serial.begin(115200); 
   Serial.println("START " VERSION);
   // set the digital pin as output:
   for (int c = 0; c < num_pins; ++c) {
