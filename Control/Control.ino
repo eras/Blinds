@@ -5,6 +5,9 @@ int step_interval = 800;
 const bool powersave = true;
 const int full_revolution = 509;
 
+const int sw1_pin = 6;
+const int sw2_pin = 7;
+
 //#define SEQUENCE_DEFAULT
 
 #define VERSION "0.3"
@@ -129,6 +132,8 @@ void setup() {
     pinMode(pins[c], OUTPUT);
   }
   pinMode(led, OUTPUT);
+  pinMode(sw1_pin, INPUT);
+  pinMode(sw2_pin, INPUT);
   reset_pins();
 }
 
@@ -219,9 +224,30 @@ void loop()
       }
     }
   }
+  if (overshoot == OVERSHOOT_NONE) {
+    if (digitalRead(sw1_pin)) {
+      if (orientation < closed_cycles) {
+        turning = closed_cycles - orientation;
+        overshoot = OVERSHOOT_READY;
+        Serial.println("c");
+      }
+    } else if (digitalRead(sw2_pin)) {
+      if (orientation != open_cycles) {
+        turning = open_cycles - orientation;
+        overshoot = OVERSHOOT_READY;
+        Serial.println("o");
+      }
+    }
+  }
   if (Serial.available()) {
     char ch = Serial.read();
-    if (ch == '>') {
+    if (ch == ' ') {
+      Serial.print("sw1 ");
+      Serial.print(digitalRead(sw1_pin));
+      Serial.print(" sw2 ");
+      Serial.print(digitalRead(sw2_pin));
+      Serial.println();
+    } else if (ch == '>') {
       turning += full_revolution;
       Serial.println(">");
     } else if (ch == '<') {
