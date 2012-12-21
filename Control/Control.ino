@@ -191,6 +191,30 @@ void dump_pin_order()
   Serial.println();
 }
 
+bool open()
+{
+  if (orientation != open_cycles) {
+    turning = open_cycles - orientation;
+    overshoot = OVERSHOOT_READY;
+    Serial.println("o");
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool close()
+{
+  if (orientation < closed_cycles) {
+    turning = closed_cycles - orientation;
+    overshoot = OVERSHOOT_READY;
+    Serial.println("c");
+    return true;
+  } else {
+    return false;
+  }
+}
+
 void loop()
 {
   if (turning != 0) {
@@ -224,19 +248,13 @@ void loop()
       }
     }
   }
-  if (overshoot == OVERSHOOT_NONE) {
+  if (turning == 0) {
     if (digitalRead(sw1_pin)) {
-      if (orientation < closed_cycles) {
-        turning = closed_cycles - orientation;
-        overshoot = OVERSHOOT_READY;
-        Serial.println("c");
+      if (!open()) {
+        close();
       }
     } else if (digitalRead(sw2_pin)) {
-      if (orientation != open_cycles) {
-        turning = open_cycles - orientation;
-        overshoot = OVERSHOOT_READY;
-        Serial.println("o");
-      }
+      open();
     }
   }
   if (Serial.available()) {
@@ -260,11 +278,7 @@ void loop()
       turning += -small_turn;
       Serial.println(".");
     } else if (ch == 'c') {
-      if (orientation < closed_cycles) {
-        turning = closed_cycles - orientation;
-        overshoot = OVERSHOOT_READY;
-        Serial.println("c");
-      }
+      close();
     } else if (ch == 'C') {
       if (orientation > closed2_cycles) {
         turning = closed2_cycles - orientation;
@@ -272,11 +286,7 @@ void loop()
         Serial.println("C");
       }
     } else if (ch == 'o') {
-      if (orientation != open_cycles) {
-        turning = open_cycles - orientation;
-        overshoot = OVERSHOOT_READY;
-        Serial.println("o");
-      }
+      open();
     } else if (ch == '0') {
       reset_pins();
       overshoot = OVERSHOOT_NONE;
