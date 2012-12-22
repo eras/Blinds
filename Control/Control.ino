@@ -312,9 +312,6 @@ void loop()
       dump_pin_order();
     } else if (ch == '+') {
       step_interval += 100;
-      if (step_interval > 10000) {
-        step_interval = 10000;
-      }
       Serial.print("Step interval: ");
       Serial.println(step_interval);
     } else if (ch == '-') {
