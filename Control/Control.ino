@@ -163,8 +163,19 @@ void setup() {
   reset_pins();
 }
 
+void step_delay()
+{
+  if (step_interval > 30000) {
+    delay(step_interval >> 10);
+  } else {
+    delayMicroseconds(step_interval);
+  }
+}
+
 void turn(int direction)
 {
+  MOTOR1_SET(motor1_bits[at_seq]);
+  step_delay();
   for (int c = 0; c < len_sequence; ++c) {
     //Serial.print(".");
     //digitalWrite(led, at_seq == 0 ? HIGH : LOW);
@@ -181,11 +192,7 @@ void turn(int direction)
       }
     }
     MOTOR1_SET(motor1_bits[at_seq]);
-    if (step_interval > 30000) {
-      delay(step_interval >> 10);
-    } else {
-      delayMicroseconds(step_interval);
-    }
+    step_delay();
   }
 }
 
