@@ -8,7 +8,7 @@ const int full_revolution = 509;
 const int sw1_pin = 6;
 const int sw2_pin = 7;
 
-//#define SEQUENCE_DEFAULT
+#define SEQUENCE 2
 
 #define VERSION "0.3"
 
@@ -72,7 +72,7 @@ bool next_permutation(int* first, int* last)
 
 
 const int sequence[] = { 
-#ifdef SEQUENCE_DEFAULT
+#if (SEQUENCE==1)
 //  1, 3, 2, 4 
 //  001,
 //  004,
@@ -84,17 +84,14 @@ const int sequence[] = {
   004,
   010
 
-#else
-//  1, 3, 2, 4 
-//  001,
-//  005,
-//  004,
-//  006,
-//  002,
-//  012,
-//  010,
-//  011
+#elif (SEQUENCE==2)
+// 1+2, 2+3, 3+4, 4+1
+   003,
+   006,
+   014,
+   011
 
+#elif (SEQUENCE==3)
 // 1, 1+2, 2, 2+3, 3, 3+4, 4, 4+1
    001,
    003,
@@ -104,7 +101,9 @@ const int sequence[] = {
    014,
    010,
    011
-#endif // SEQUENCE_DEFAULT
+#endif // SEQUENCE
+
+
 };
 
 const int sequence_xor = 0x00;
