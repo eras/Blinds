@@ -107,7 +107,7 @@ const int sequence[] = {
 #endif // SEQUENCE_DEFAULT
 };
 
-const int sequence_xor = 0xff;
+const int sequence_xor = 0x00;
 
 const int len_sequence = sizeof(sequence) / sizeof(*sequence);
 
