@@ -1,7 +1,7 @@
 // -*- mode: c++ -*-
 int pins[] = { 9, 10, 11, 12 };
 const int num_pins = sizeof(pins) / sizeof(*pins);
-int step_interval = 1000;
+long unsigned step_interval = 200000;
 const bool powersave = true;
 const int full_revolution = 509;
 
