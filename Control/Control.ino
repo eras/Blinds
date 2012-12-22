@@ -24,6 +24,8 @@ const int open_cycles = 0;
 const int overshoot_cycles = 50;
 const int small_turn = full_revolution / 20;
 
+bool powered = false;
+
 void swap(int& a, int& b)
 {
   int tmp = a;
@@ -124,6 +126,7 @@ int at_seq = 0;
 
 void reset_pins()
 {
+  powered = false;
   MOTOR1_SET(0);
 }
 
@@ -174,8 +177,11 @@ void step_delay()
 
 void turn(int direction)
 {
-  MOTOR1_SET(motor1_bits[at_seq]);
-  step_delay();
+  if (!powered) {
+    MOTOR1_SET(motor1_bits[at_seq]);
+    step_delay();
+    powered = true;
+  }
   for (int c = 0; c < len_sequence; ++c) {
     //Serial.print(".");
     //digitalWrite(led, at_seq == 0 ? HIGH : LOW);
