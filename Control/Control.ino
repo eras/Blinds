@@ -142,15 +142,6 @@ void turn(int direction)
   for (int c = 0; c < len_sequence; ++c) {
     //Serial.print(".");
     digitalWrite(led, at_seq == 0 ? HIGH : LOW);
-    int state = sequence[at_seq] ^ sequence_xor;
-    int changed = state ^ cur_state;
-    for (int c = 0; c < num_pins; ++c) {
-      if (changed & (1 << c)) {
-        int value = state & (1 << c) ? HIGH : LOW;
-        digitalWrite(pins[c], value);
-      }
-    }
-    cur_state = state;
     if (direction) {
       ++at_seq;
       if (at_seq == len_sequence) {
@@ -163,7 +154,20 @@ void turn(int direction)
         --at_seq;
       }
     }
-    delayMicroseconds(step_interval);
+    int state = sequence[at_seq] ^ sequence_xor;
+    int changed = state ^ cur_state;
+    for (int c = 0; c < num_pins; ++c) {
+      if (changed & (1 << c)) {
+        int value = state & (1 << c) ? HIGH : LOW;
+        digitalWrite(pins[c], value);
+      }
+    }
+    cur_state = state;
+    if (step_interval > 30000) {
+      delay(step_interval >> 10);
+    } else {
+      delayMicroseconds(step_interval);
+    }
   }
 }
 
