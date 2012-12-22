@@ -2,7 +2,7 @@
 int pins[] = { 10, 9, 12, 11 };
 int motor1_pins[] = { 1, 2, 3, 4 };
 const int num_pins = sizeof(pins) / sizeof(*pins);
-long unsigned step_interval = 200000;
+long unsigned step_interval = 2000;
 const bool powersave = true;
 const int full_revolution = 509;
 
