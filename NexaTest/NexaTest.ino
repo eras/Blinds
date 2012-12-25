@@ -9,10 +9,26 @@ void setup()
   NexaRX.setup();
 }
 
+bool newline = true;
+
 void debug(unsigned x)
 {
-  Serial.print("debug: ");
-  Serial.println(x);
+  if (!newline) Serial.print(" ");
+  Serial.print(x);
+  newline = false;
+}
+
+void debug(const char* x)
+{
+  if (!newline) Serial.print(" ");
+  Serial.print(x);
+  newline = false;
+}
+
+void debug()
+{
+  Serial.println();
+  newline = true;
 }
 
 void loop()
