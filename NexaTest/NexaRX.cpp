@@ -126,8 +126,8 @@ message_send(const char* msg, unsigned long value1 = 0, unsigned long value2 = 0
   }
 }
 
-#define DEBUG_MESSAGE_SEND(x) message_send x
-//#define DEBUG_MESSAGE_SEND(x)
+//#define DEBUG_MESSAGE_SEND(x) message_send x
+#define DEBUG_MESSAGE_SEND(x)
 
 static
 void
