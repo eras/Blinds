@@ -4,12 +4,13 @@
 #include "NexaRX.h"
 
 // // radio:
-// #define NEXA_PORT PINC
-// #define NEXA_DDR DDRC
-// #define NEXA_MASK (1 << 4)
-// #define NEXA_PCINT_MSK PCMSK1
-// #define NEXA_PCINT PCINT12
-// #define NEXA_PCICR_MASK (1 << PCIE1)
+#define NEXA_PORT PINC
+#define NEXA_DDR DDRC
+#define NEXA_MASK (1 << 4)
+#define NEXA_PCINT_MSK PCMSK1
+#define NEXA_PCINT PCINT12
+#define NEXA_PCICR_MASK (1 << PCIE1)
+#define NEXA_INT_vect PCINT1_vect
 
 // sw1:
 // #define NEXA_PORT PIND
@@ -20,12 +21,12 @@
 // #define NEXA_PCICR_MASK (1 << PCIE2)
 
 // debug2:
-#define NEXA_PORT PIND
-#define NEXA_DDR DDRD
-#define NEXA_MASK (1 << 5)
-#define NEXA_PCINT_MSK PCMSK2
-#define NEXA_PCINT PCINT21
-#define NEXA_PCICR_MASK (1 << PCIE2)
+// #define NEXA_PORT PIND
+// #define NEXA_DDR DDRD
+// #define NEXA_MASK (1 << 5)
+// #define NEXA_PCINT_MSK PCMSK2
+// #define NEXA_PCINT PCINT21
+// #define NEXA_PCICR_MASK (1 << PCIE2)
 
 #define NEXA_READ !!(NEXA_PORT & NEXA_MASK)
 
@@ -66,7 +67,7 @@ static unsigned messages_rd;
 static volatile unsigned messages_count; // allows using all slots and accessing the data without cli/sei
 static unsigned char messages_sent;
 
-static const int prescaler = 8;
+static const int prescaler = 1;
 static const double systemHz = 16000000;
 static const double bitLength = 350.0 / 1000000.0;
 static const unsigned int finetuning = 47 / prescaler; // fine-tuned with an oscilloscope
@@ -357,7 +358,7 @@ read_bit()
   }
 }
 
-ISR(PCINT2_vect)
+ISR(NEXA_INT_vect)
 {
   DEBUGFLIP(1);
   unsigned t = TCNT1;
