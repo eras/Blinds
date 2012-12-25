@@ -11,7 +11,8 @@ void setup()
 void td()
 {
   //  delayMicroseconds(350);
-  delayMicroseconds(337);
+  //delayMicroseconds(337);
+  delayMicroseconds(350 * 10);
 }
 
 void send0()
@@ -50,9 +51,23 @@ void sendX()
   digitalWrite(port, LOW); td();
 }
 
+void sendStop()
+{
+  digitalWrite(port, HIGH); td();
+  digitalWrite(port, LOW); td();
+  digitalWrite(port, LOW); td();
+  digitalWrite(port, LOW); td();
+  for (int c = 0; c < 7; ++c) {
+    digitalWrite(port, LOW); td();
+    digitalWrite(port, LOW); td();
+    digitalWrite(port, LOW); td();
+    digitalWrite(port, LOW); td();
+  }
+}
+
 void send_bits(unsigned long data, char n)
 {
-  while (n >= 0) {
+  while (n > 0) {
     --n;
     if (data & (1 << n)) {
       sendX();
@@ -60,12 +75,14 @@ void send_bits(unsigned long data, char n)
       send0();
     }
   }
+  sendStop();
 }
 
 void send()
 {
-  // 100010000110
-  send_bits(02222211ul, 12);
+  // 1000 1000 0110
+  send_bits(04206ul, 12);
+  //send_bits(02222211ul, 12);
 }
 
 void loop()
