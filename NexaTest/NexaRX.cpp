@@ -68,7 +68,7 @@ static unsigned char messages_sent;
 
 static const int prescaler = 8;
 static const double systemHz = 16000000;
-static const double bitLength = 10 * 350.0 / 1000000.0;
+static const double bitLength = 350.0 / 1000000.0;
 static const unsigned int finetuning = 47 / prescaler; // fine-tuned with an oscilloscope
 static const unsigned int timerPreload = 65536 - systemHz / prescaler / (1 / bitLength) + finetuning;
 

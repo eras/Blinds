@@ -11,8 +11,8 @@ void setup()
 void td()
 {
   //  delayMicroseconds(350);
-  //delayMicroseconds(337);
-  delayMicroseconds(350 * 10);
+  delayMicroseconds(337);
+  //  delayMicroseconds(360 * 10);
 }
 
 void send0()
