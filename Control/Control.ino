@@ -1,4 +1,5 @@
 #include "NexaRX.h"
+#include "EEPROM.h"
 
 // -*- mode: c++ -*-
 int pins[] = { 10, 9, 12, 11 };
@@ -31,6 +32,11 @@ const int small_turn = full_revolution / 20;
 unsigned int green_led_ms_left = 0; // how many milliseconds to keep the green led on?
 
 bool powered = false;
+
+int address_house;
+int address_device;
+
+bool learning_address;
 
 void swap(int& a, int& b)
 {
@@ -154,6 +160,19 @@ void setup_motor1()
   }
 }
 
+void save_address()
+{
+  EEPROM.write(0, address_house);
+  EEPROM.write(1, address_device);
+  EEPROM.write(2, address_device ^ address_house ^ 0x42);
+}
+
+bool load_address()
+{
+  address_house = EEPROM.read(0);
+  address_device = EEPROM.read(1);
+  return EEPROM.read(2) == address_house ^ address_device ^ 0x42;
+}                    
 
 void setup() {
   Serial.begin(115200); 
@@ -171,6 +190,22 @@ void setup() {
 
   setup_motor1();
   reset_pins();
+
+  while (digitalRead(sw1_pin) || digitalRead(sw2_pin)) {
+    digitalWrite(green_led_pin, HIGH);
+    learning_address = true;
+    delay(100);
+  }
+  if (learning_address) {
+    delay(1000);
+  }
+  // led turned off in main loop
+
+  if (!learning_address) {
+    if (!load_address()) {
+      learning_address = true;
+    }
+  }
 }
 
 void step_delay()
@@ -270,13 +305,17 @@ bool close()
   }
 }
 
-void loop()
+unsigned delta_millis()
 {
   static unsigned int prev_millis = 0;
   unsigned int cur_millis = millis();
   unsigned int delta = cur_millis - prev_millis;
   prev_millis = cur_millis;
+  return delta;
+}
 
+void maintain_green_led(unsigned delta)
+{
   if (green_led_ms_left > 0) {
     unsigned prev_green_led_ms_left = green_led_ms_left;
     green_led_ms_left -= delta;
@@ -286,6 +325,13 @@ void loop()
   }
 
   digitalWrite(green_led_pin, green_led_ms_left > 0 ? HIGH : LOW);
+}
+
+void control_loop()
+{
+  unsigned delta = delta_millis();
+
+  maintain_green_led(delta);
   digitalWrite(red_led_pin, (overshoot == OVERSHOOT_UNCONFIGURED && ((millis() >> 10) & 1)) ? HIGH : LOW);
 
   if (turning != 0) {
@@ -325,7 +371,7 @@ void loop()
     int house, device;
     bool state;
     if (NexaRX.getMessage(house, device, state) && overshoot == OVERSHOOT_NONE) {
-      if (house == 10 && device == 0) {
+      if (house == address_house && device == address_device) {
         green_led_ms_left = 200;
         if (state) {
           open();
@@ -350,7 +396,7 @@ void loop()
       while (digitalRead(sw1_pin) && digitalRead(sw2_pin)) {
         delay(100);
       }
-      delay(2000);
+      delay(1000);
     } else { 
       if (turning == 0) {
         if (sw1) {
@@ -428,3 +474,45 @@ void loop()
   }
 }
 
+void learning_loop()
+{
+  static bool has_candidate = false;
+  unsigned delta = delta_millis();
+  maintain_green_led(delta);
+  digitalWrite(red_led_pin, (has_candidate || ((millis() >> 8) & 1)) ? HIGH : LOW);
+  if (!has_candidate) {
+    int house, device;
+    bool state;
+    if (NexaRX.getMessage(house, device, state) && state) {
+      address_house = house;
+      address_device = device;
+      has_candidate = true;
+    }
+  } else {
+    int house, device;
+    bool state;
+    if (NexaRX.getMessage(house, device, state) &&
+        house == address_house && device == address_device) {
+      green_led_ms_left = 200;
+    }
+    if (digitalRead(sw1_pin) || digitalRead(sw2_pin)) {
+      digitalWrite(green_led_pin, HIGH);
+      while (digitalRead(sw1_pin) || digitalRead(sw2_pin)) {
+        delay(100);
+      }
+      digitalWrite(green_led_pin, HIGH);
+      delay(1000);
+      save_address();
+      learning_address = false;
+    }
+  }
+}
+
+void loop()
+{
+  if (learning_address) {
+    learning_loop();
+  } else {
+    control_loop();
+  }
+}
