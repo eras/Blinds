@@ -71,7 +71,8 @@ static const int prescaler = 1;
 static const double systemHz = 16000000;
 static const double bitLength = 350.0 / 1000000.0;
 static const unsigned int finetuning = 47 / prescaler; // fine-tuned with an oscilloscope
-static const unsigned int timerPreload = 65536 - systemHz / prescaler / (1 / bitLength) + finetuning;
+static const unsigned int timerCycles = systemHz / prescaler / (1 / bitLength);
+static const unsigned int timerPreload = 65536 - timerCycles + finetuning;
 
 // when (TCNT1 >= 65536 - timerAdjustThreshold) || (TCNT1 <=
 // timerAdjustThreshold) in IO handler, we can fudge the timer offset
@@ -401,7 +402,7 @@ ISR(NEXA_INT_vect)
 ISR(TIMER1_OVF_vect)
 {
   ++debug_count_timer;
-  TCNT1 = timerPreload;
+  TCNT1 -= timerCycles;
   DEBUGFLIP(0);
   unsigned delta = 65535 - previous_input_time;
   // move previous_input_time into current time coordinates
