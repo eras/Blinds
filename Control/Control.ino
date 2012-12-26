@@ -2,9 +2,8 @@
 #include "EEPROM.h"
 
 // -*- mode: c++ -*-
-int pins[] = { 10, 9, 12, 11 };
 int motor1_pins[] = { 4, 3, 2, 1 };
-const int num_pins = sizeof(pins) / sizeof(*pins);
+const int num_pins = sizeof(motor1_pins) / sizeof(*motor1_pins);
 long unsigned step_interval = 2000;
 const bool powersave = true;
 const int full_revolution = 509;
@@ -177,10 +176,6 @@ bool load_address()
 void setup() {
   Serial.begin(115200); 
   Serial.println("START " VERSION);
-  // set the digital pin as output:
-  // for (int c = 0; c < num_pins; ++c) {
-  //   pinMode(pins[c], OUTPUT);
-  // }
   pinMode(green_led_pin, OUTPUT);
   pinMode(red_led_pin, OUTPUT);
   pinMode(sw1_pin, INPUT);
@@ -256,7 +251,7 @@ enum overshoot_state {
 
 void next_pin_order()
 {
-  next_permutation(pins, pins + num_pins);
+  next_permutation(motor1_pins, motor1_pins + num_pins);
   setup_motor1();
 }
 
@@ -265,7 +260,7 @@ void dump_pin_order()
   Serial.print("Pin order:");
   for (int c = 0; c < num_pins; ++c) {
     Serial.print(' ');
-    Serial.print(pins[c]);
+    Serial.print(motor1_pins[c]);
   }
   Serial.println();
 }
