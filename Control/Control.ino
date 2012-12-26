@@ -2,7 +2,7 @@
 
 // -*- mode: c++ -*-
 int pins[] = { 10, 9, 12, 11 };
-int motor1_pins[] = { 1, 2, 3, 4 };
+int motor1_pins[] = { 4, 3, 2, 1 };
 const int num_pins = sizeof(pins) / sizeof(*pins);
 long unsigned step_interval = 2000;
 const bool powersave = true;
