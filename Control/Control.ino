@@ -13,6 +13,8 @@ const int full_revolution = 509;
 //#define MOTOR1_SET(VALUE) do { MOTOR1_PORT = (MOTOR1_PORT & (~MOTOR1_MASK)) | (VALUE); } while (0)
 #define MOTOR1_SET(VALUE) do { MOTOR1_PORT = (VALUE); } while (0)
 
+const int green_led_pin = 3;
+const int red_led_pin = 2;
 const int sw1_pin = 6;
 const int sw2_pin = 7;
 
@@ -122,8 +124,6 @@ const int len_sequence = sizeof(sequence) / sizeof(*sequence);
 
 unsigned char motor1_bits[len_sequence];
 
-const int led = 2;
-
 int at_seq = 0;
 
 void reset_pins()
@@ -160,7 +160,8 @@ void setup() {
   // for (int c = 0; c < num_pins; ++c) {
   //   pinMode(pins[c], OUTPUT);
   // }
-  pinMode(led, OUTPUT);
+  pinMode(green_led_pin, OUTPUT);
+  pinMode(red_led_pin, OUTPUT);
   pinMode(sw1_pin, INPUT);
   pinMode(sw2_pin, INPUT);
 
