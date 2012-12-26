@@ -28,6 +28,8 @@ const int open_cycles = 0;
 const int overshoot_cycles = 50;
 const int small_turn = full_revolution / 20;
 
+unsigned int green_led_ms_left = 0; // how many milliseconds to keep the green led on?
+
 bool powered = false;
 
 void swap(int& a, int& b)
@@ -210,11 +212,12 @@ void turn(int direction)
 long int turning = 0; // orientation we want to be in relative to current
 long int orientation = 0;
 enum overshoot_state {
+  OVERSHOOT_UNCONFIGURED,
   OVERSHOOT_NONE,
   OVERSHOOT_READY,
   OVERSHOOT_SHOOTING,
   OVERSHOOT_RETURNING
-} overshoot = OVERSHOOT_NONE;
+} overshoot = OVERSHOOT_UNCONFIGURED;
 
 void next_pin_order()
 {
@@ -244,6 +247,17 @@ bool open()
   }
 }
 
+void reset_orientation()
+{
+  reset_pins();
+  overshoot = OVERSHOOT_NONE;
+  turning = 0;
+  orientation = 0;
+  Serial.print("O ");
+  Serial.print(orientation);
+  Serial.println();
+}
+
 bool close()
 {
   if (orientation < closed_cycles) {
@@ -258,6 +272,22 @@ bool close()
 
 void loop()
 {
+  static unsigned int prev_millis = 0;
+  unsigned int cur_millis = millis();
+  unsigned int delta = cur_millis - prev_millis;
+  prev_millis = cur_millis;
+
+  if (green_led_ms_left > 0) {
+    unsigned prev_green_led_ms_left = green_led_ms_left;
+    green_led_ms_left -= delta;
+    if (green_led_ms_left > prev_green_led_ms_left) {
+      green_led_ms_left = 0;
+    }
+  }
+
+  digitalWrite(green_led_pin, green_led_ms_left > 0 ? HIGH : LOW);
+  digitalWrite(red_led_pin, (overshoot == OVERSHOOT_UNCONFIGURED && ((millis() >> 10) & 1)) ? HIGH : LOW);
+
   if (turning != 0) {
     long int old_turning = turning;
     turn(turning > 0);
@@ -272,21 +302,22 @@ void loop()
     if (turning == 0) {
       // old_turning == -1 or 1
       switch (overshoot) {
-        case OVERSHOOT_NONE:
-        case OVERSHOOT_RETURNING:
-          if (powersave) {
-            reset_pins();
-          }
-          overshoot = OVERSHOOT_NONE;
-          break;
-        case OVERSHOOT_READY:
-          turning = old_turning * overshoot_cycles;
-          overshoot = OVERSHOOT_SHOOTING;
-          break;
-        case OVERSHOOT_SHOOTING:
-          turning = -old_turning * overshoot_cycles;
-          overshoot = OVERSHOOT_RETURNING;
-          break;
+      case OVERSHOOT_UNCONFIGURED: break;
+      case OVERSHOOT_NONE:
+      case OVERSHOOT_RETURNING:
+        if (powersave) {
+          reset_pins();
+        }
+        overshoot = OVERSHOOT_NONE;
+        break;
+      case OVERSHOOT_READY:
+        turning = old_turning * overshoot_cycles;
+        overshoot = OVERSHOOT_SHOOTING;
+        break;
+      case OVERSHOOT_SHOOTING:
+        turning = -old_turning * overshoot_cycles;
+        overshoot = OVERSHOOT_RETURNING;
+        break;
       }
     }
   }
@@ -295,6 +326,7 @@ void loop()
     bool state;
     if (NexaRX.getMessage(house, device, state) && overshoot == OVERSHOOT_NONE) {
       if (house == 10 && device == 0) {
+        green_led_ms_left = 200;
         if (state) {
           open();
         } else {
@@ -308,6 +340,26 @@ void loop()
       close();
     } else if (digitalRead(sw2_pin)) {
       open();
+    }
+  } else if (overshoot == OVERSHOOT_UNCONFIGURED) {
+    bool sw1 = digitalRead(sw1_pin);
+    bool sw2 = digitalRead(sw2_pin);
+    if (sw1 && sw2) {
+      digitalWrite(green_led_pin, HIGH);
+      reset_orientation();
+      while (digitalRead(sw1_pin) && digitalRead(sw2_pin)) {
+        delay(100);
+      }
+      delay(2000);
+    } else { 
+      if (turning == 0) {
+        if (sw1) {
+          turning += small_turn;
+        }
+        if (sw2) {
+          turning -= small_turn;
+        }
+      }
     }
   }
   if (Serial.available()) {
@@ -331,23 +383,21 @@ void loop()
       turning += -small_turn;
       Serial.println(".");
     } else if (ch == 'c') {
-      close();
+      if (overshoot != OVERSHOOT_UNCONFIGURED) {
+        close();
+      }
     } else if (ch == 'C') {
-      if (orientation > closed2_cycles) {
+      if (overshoot != OVERSHOOT_UNCONFIGURED && orientation > closed2_cycles) {
         turning = closed2_cycles - orientation;
         overshoot = OVERSHOOT_READY;
         Serial.println("C");
       }
     } else if (ch == 'o') {
-      open();
+      if (overshoot != OVERSHOOT_UNCONFIGURED) {
+        open();
+      }
     } else if (ch == '0') {
-      reset_pins();
-      overshoot = OVERSHOOT_NONE;
-      turning = 0;
-      orientation = 0;
-      Serial.print("O ");
-      Serial.print(orientation);
-      Serial.println();
+      reset_orientation();
     } else if (ch == '?') {
       Serial.print("O ");
       Serial.print(orientation);
