@@ -377,24 +377,27 @@ ISR(NEXA_INT_vect)
   if (state == SS_NOT_CAPTURING) {
     start_capture();
   } else if (!timer_adjusted) {
-    if (t >= 65536 - timerAdjustThreshold) {
-      // ok, the end of the bit arrived a little bit early, perform
-      // reading immediately
-      // DEBUGFLIP(0);
-      DEBUG_MESSAGE_SEND(("a1", t));
-      read_bit();
-      start_timer();
-      previous_input_time = timerPreload;
-      timer_adjusted = true;
-    } else if (t <= timerPreload + timerAdjustThreshold) {
-      // DEBUGFLIP(0);
-      // DEBUGFLIP(1);
-      // ok, the end of the previous bit arrived a little bit late, so
-      // let's imagine the bit really started here
-      DEBUG_MESSAGE_SEND(("a2", t));
-      start_timer();
-      previous_input_time = timerPreload;
-      timer_adjusted = true;
+    // let's skip the annoying(?) situation
+    if (t >= timerPreload) {
+      if (t >= 65536 - timerAdjustThreshold) {
+        // ok, the end of the bit arrived a little bit early, perform
+        // reading immediately
+        // DEBUGFLIP(0);
+        DEBUG_MESSAGE_SEND(("a1", t));
+        read_bit();
+        start_timer();
+        previous_input_time = timerPreload;
+        timer_adjusted = true;
+      } else if (t <= timerPreload + timerAdjustThreshold) {
+        // DEBUGFLIP(0);
+        // DEBUGFLIP(1);
+        // ok, the end of the previous bit arrived a little bit late, so
+        // let's imagine the bit really started here
+        DEBUG_MESSAGE_SEND(("a2", t));
+        start_timer();
+        previous_input_time = timerPreload;
+        timer_adjusted = true;
+      }
     }
   }
 }
