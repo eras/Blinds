@@ -64,6 +64,11 @@ struct DebugMessage {
 };
 #endif
 
+struct Code {
+  unsigned char idx;
+  unsigned long bits;
+};
+
 template <typename T, int MAX_MESSAGES>
 struct MessageQueue {
   const unsigned    messages_max = MAX_MESSAGES;
@@ -115,7 +120,7 @@ struct MessageQueue {
 #ifdef DEBUG
 MessageQueue<DebugMessage, 50> debugs;
 #endif // DEBUG
-MessageQueue<DebugMessage, 5> codes;
+MessageQueue<Code, 10> codes;
 
 static const int prescaler = 1;
 static const double systemHz = 16000000;
@@ -168,20 +173,17 @@ debug_message_send(const char* msg, unsigned long value1 = 0, unsigned long valu
   m->value4 = value4;
   debugs.sendFinish();
 }
+#endif
 
 //#define DEBUG_MESSAGE_SEND(x) debug_message_send x
 #define DEBUG_MESSAGE_SEND(x)
 
 static void
-message_send(const char* msg, unsigned long value1 = 0, unsigned long value2 = 0, unsigned long value3 = 0, unsigned long value4 = 0)
+message_send(unsigned long bits)
 {
-  DebugMessage* m = codes.sendBegin();
+  Code* m = codes.sendBegin();
   if (!m) return;
-  m->msg = msg;
-  m->value1 = value1;
-  m->value2 = value2;
-  m->value3 = value3;
-  m->value4 = value4;
+  m->bits = bits;
   codes.sendFinish();
 }
 
@@ -315,7 +317,7 @@ NexaRXInstance::setup()
 static void
 handle_message(unsigned long bits)
 {
-  message_send("hm", bits);
+  message_send(bits);
 }
 
 static void
@@ -473,9 +475,9 @@ ISR(TIMER1_OVF_vect)
 bool
 NexaRXInstance::getMessage(int& house, int& device, bool& state)
 {
-  static int prev_bits = 0;
+#ifdef DEBUG
   DebugMessage msg;
-  if (debugs.receive(msg) || codes.receive(msg)) {
+  if (debugs.receive(msg)) {
     debug(msg.idx);
     debug(msg.msg);
     debug(msg.value1);
@@ -483,9 +485,17 @@ NexaRXInstance::getMessage(int& house, int& device, bool& state)
     debug(msg.value3);
     debug(msg.value4);
     debug();
+  }
+#endif
+  Code code;
+  if (codes.receive(code)) {
+    house = code.bits >> 8;
+    device = (code.bits >> 4) & 0x0f;
+    state = code.bits & 1;
+    return true;
+  } else {
     return false;
   }
-  return false;
 }
 
 void
