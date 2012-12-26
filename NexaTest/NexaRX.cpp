@@ -115,6 +115,7 @@ struct MessageQueue {
 #ifdef DEBUG
 MessageQueue<DebugMessage, 50> debugs;
 #endif // DEBUG
+MessageQueue<DebugMessage, 5> codes;
 
 static const int prescaler = 1;
 static const double systemHz = 16000000;
@@ -170,6 +171,19 @@ debug_message_send(const char* msg, unsigned long value1 = 0, unsigned long valu
 
 //#define DEBUG_MESSAGE_SEND(x) debug_message_send x
 #define DEBUG_MESSAGE_SEND(x)
+
+static void
+message_send(const char* msg, unsigned long value1 = 0, unsigned long value2 = 0, unsigned long value3 = 0, unsigned long value4 = 0)
+{
+  DebugMessage* m = codes.sendBegin();
+  if (!m) return;
+  m->msg = msg;
+  m->value1 = value1;
+  m->value2 = value2;
+  m->value3 = value3;
+  m->value4 = value4;
+  codes.sendFinish();
+}
 
 static
 void
@@ -301,7 +315,7 @@ NexaRXInstance::setup()
 static void
 handle_message(unsigned long bits)
 {
-  debug_message_send("hm", bits);
+  message_send("hm", bits);
 }
 
 static void
@@ -315,7 +329,7 @@ process_bit(bool value)
   case SS_STOPPING: {
     ++code_len;
     if (value) {
-      debug_message_send("pb", 0, code_len, value);
+      DEBUG_MESSAGE_SEND(("pb", 0, code_len, value));
       // something detected during stop
       //DEBUGFLIP(0);
       next_capture();
@@ -343,7 +357,7 @@ process_code()
   } break;
   case 0356: { // 11 101 110
     // 1: unsupported
-    debug_message_send("0356");
+    DEBUG_MESSAGE_SEND(("0356"));
     //DEBUGFLIP(0);
     next_capture();
     //DEBUGFLIP(0);
@@ -360,12 +374,12 @@ process_code()
       state = SS_STOPPING;
       code_len = 8;         // we have received 8 bits of the stop code
     } else {
-      debug_message_send("inob", num_bits, bits);
+      DEBUG_MESSAGE_SEND(("inob", num_bits, bits));
       next_capture();
     }
   } break;
   default: {
-    debug_message_send("ic", debug_count_io, debug_count_timer, code_bits);
+    DEBUG_MESSAGE_SEND(("ic", debug_count_io, debug_count_timer, code_bits));
     next_capture();
   }
   }
@@ -461,7 +475,7 @@ NexaRXInstance::getMessage(int& house, int& device, bool& state)
 {
   static int prev_bits = 0;
   DebugMessage msg;
-  if (debugs.receive(msg)) {
+  if (debugs.receive(msg) || codes.receive(msg)) {
     debug(msg.idx);
     debug(msg.msg);
     debug(msg.value1);
