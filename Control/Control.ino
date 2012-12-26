@@ -1,3 +1,5 @@
+#include "NexaRX.h"
+
 // -*- mode: c++ -*-
 int pins[] = { 10, 9, 12, 11 };
 int motor1_pins[] = { 1, 2, 3, 4 };
@@ -162,6 +164,8 @@ void setup() {
   pinMode(sw1_pin, INPUT);
   pinMode(sw2_pin, INPUT);
 
+  NexaRX.setup();
+
   setup_motor1();
   reset_pins();
 }
@@ -272,6 +276,7 @@ void loop()
           if (powersave) {
             reset_pins();
           }
+          overshoot = OVERSHOOT_NONE;
           break;
         case OVERSHOOT_READY:
           turning = old_turning * overshoot_cycles;
@@ -284,16 +289,25 @@ void loop()
       }
     }
   }
-  if (overshoot == OVERSHOOT_NONE) {
-#if 0
-    if (digitalRead(sw1_pin)) {
-      if (!open()) {
-        close();
+  {
+    int house, device;
+    bool state;
+    if (NexaRX.getMessage(house, device, state) && overshoot == OVERSHOOT_NONE) {
+      if (house == 10 && device == 0) {
+        if (state) {
+          open();
+        } else {
+          close();
+        }
       }
+    }
+  }
+  if (overshoot == OVERSHOOT_NONE) {
+    if (digitalRead(sw1_pin)) {
+      close();
     } else if (digitalRead(sw2_pin)) {
       open();
     }
-#endif
   }
   if (Serial.available()) {
     char ch = Serial.read();
