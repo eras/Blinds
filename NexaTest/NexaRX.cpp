@@ -45,14 +45,14 @@
 // #define DEBUG2_IDX (5)
 // #define DEBUG2_MASK (1 << DEBUG2_IDX)
 
-#define DEBUG(x, y) do { DEBUG##x##_PORT = (DEBUG##x##_PORT & ~DEBUG##x##_MASK) | ((y) << DEBUG##x##_IDX); } while (0)
+#define DEBUGPIN(x, y) do { DEBUG##x##_PORT = (DEBUG##x##_PORT & ~DEBUG##x##_MASK) | ((y) << DEBUG##x##_IDX); } while (0)
 
 static bool debug_value0;
 static bool debug_value1;
 static bool debug_count;
 
-#define DEBUGFLIP(x) DEBUG(x, (debug_value##x ^= 1))
-#define DEBUGRESET(x) DEBUG(x, (debug_value##x = 0))
+#define DEBUGFLIP(x) DEBUGPIN(x, (debug_value##x ^= 1))
+#define DEBUGRESET(x) DEBUGPIN(x, (debug_value##x = 0))
 
 struct Message {
   unsigned char idx;
@@ -107,7 +107,7 @@ extern void debug(unsigned);
 
 // assumes interrupts are disabled
 static void
-message_send(const char* msg, unsigned long value1 = 0, unsigned long value2 = 0, unsigned long value3 = 0, unsigned long value4 = 0)
+debug_message_send(const char* msg, unsigned long value1 = 0, unsigned long value2 = 0, unsigned long value3 = 0, unsigned long value4 = 0)
 {
   ++messages_sent;
   if (messages_count == messages_max) {
@@ -128,7 +128,7 @@ message_send(const char* msg, unsigned long value1 = 0, unsigned long value2 = 0
   }
 }
 
-//#define DEBUG_MESSAGE_SEND(x) message_send x
+//#define DEBUG_MESSAGE_SEND(x) debug_message_send x
 #define DEBUG_MESSAGE_SEND(x)
 
 static
@@ -261,7 +261,7 @@ NexaRXInstance::setup()
 static void
 handle_message(unsigned long bits)
 {
-  message_send("hm", bits);
+  debug_message_send("hm", bits);
 }
 
 static void
@@ -275,7 +275,7 @@ process_bit(bool value)
   case SS_STOPPING: {
     ++code_len;
     if (value) {
-      message_send("pb", 0, code_len, value);
+      debug_message_send("pb", 0, code_len, value);
       // something detected during stop
       //DEBUGFLIP(0);
       next_capture();
@@ -303,7 +303,7 @@ process_code()
   } break;
   case 0356: { // 11 101 110
     // 1: unsupported
-    message_send("0356");
+    debug_message_send("0356");
     //DEBUGFLIP(0);
     next_capture();
     //DEBUGFLIP(0);
@@ -320,12 +320,12 @@ process_code()
       state = SS_STOPPING;
       code_len = 8;         // we have received 8 bits of the stop code
     } else {
-      message_send("inob", num_bits, bits);
+      debug_message_send("inob", num_bits, bits);
       next_capture();
     }
   } break;
   default: {
-    message_send("ic", debug_count_io, debug_count_timer, code_bits);
+    debug_message_send("ic", debug_count_io, debug_count_timer, code_bits);
     next_capture();
   }
   }
