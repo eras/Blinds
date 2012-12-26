@@ -3,6 +3,8 @@
 
 #include "NexaRX.h"
 
+#define DEBUG 1
+
 // // radio:
 #define NEXA_PORT PINC
 #define NEXA_DDR DDRC
@@ -54,18 +56,65 @@ static bool debug_count;
 #define DEBUGFLIP(x) DEBUGPIN(x, (debug_value##x ^= 1))
 #define DEBUGRESET(x) DEBUGPIN(x, (debug_value##x = 0))
 
-struct Message {
+#ifdef DEBUG
+struct DebugMessage {
   unsigned char idx;
   const char* msg;
   unsigned long value1, value2, value3, value4;
 };
+#endif
 
-static const unsigned messages_max = 50;
-static Message messages[messages_max];
-static unsigned messages_wr;
-static unsigned messages_rd;
-static volatile unsigned messages_count; // allows using all slots and accessing the data without cli/sei
-static unsigned char messages_sent;
+template <typename T, int MAX_MESSAGES>
+struct MessageQueue {
+  const unsigned    messages_max = MAX_MESSAGES;
+  T                 messages[MAX_MESSAGES];
+  unsigned          messages_wr;
+  unsigned          messages_rd;
+  volatile unsigned messages_count; // allows using all slots and accessing the data without cli/sei
+  unsigned char     messages_sent;
+
+  T* sendBegin()
+  {
+    ++messages_sent;
+    if (messages_count == messages_max) {
+      return 0;
+    } else {
+      T* m = &messages[messages_wr];
+      m->idx = messages_sent;
+      return m;
+    }
+  }
+  void sendFinish()
+  {
+    if (++messages_wr == messages_max) {
+      messages_wr = 0;
+    }
+    if (++messages_count > messages_max) {
+      messages_count = messages_max;
+    }
+  }
+  bool receive(T& msg)
+  {
+    if (messages_count) {
+      cli();
+      if (messages_count) {
+        --messages_count;
+        msg = messages[messages_rd];
+        if (++messages_rd == messages_max) {
+          messages_rd = 0;
+        }
+      }
+      sei();
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
+
+#ifdef DEBUG
+MessageQueue<DebugMessage, 50> debugs;
+#endif // DEBUG
 
 static const int prescaler = 1;
 static const double systemHz = 16000000;
@@ -109,23 +158,14 @@ extern void debug(unsigned);
 static void
 debug_message_send(const char* msg, unsigned long value1 = 0, unsigned long value2 = 0, unsigned long value3 = 0, unsigned long value4 = 0)
 {
-  ++messages_sent;
-  if (messages_count == messages_max) {
-    return;
-  }
-  Message* m = &messages[messages_wr];
-  m->idx = messages_sent;
+  DebugMessage* m = debugs.sendBegin();
+  if (!m) return;
   m->msg = msg;
   m->value1 = value1;
   m->value2 = value2;
   m->value3 = value3;
   m->value4 = value4;
-  if (++messages_wr == messages_max) {
-    messages_wr = 0;
-  }
-  if (++messages_count > messages_max) {
-    messages_count = messages_max;
-  }
+  debugs.sendFinish();
 }
 
 //#define DEBUG_MESSAGE_SEND(x) debug_message_send x
@@ -420,18 +460,8 @@ bool
 NexaRXInstance::getMessage(int& house, int& device, bool& state)
 {
   static int prev_bits = 0;
-  if (messages_count) {
-    Message msg;
-    cli();
-    if (messages_count) {
-      --messages_count;
-      msg = messages[messages_rd];
-      if (++messages_rd == messages_max) {
-        messages_rd = 0;
-      }
-    }
-    sei();
-
+  DebugMessage msg;
+  if (debugs.receive(msg)) {
     debug(msg.idx);
     debug(msg.msg);
     debug(msg.value1);
@@ -447,5 +477,5 @@ NexaRXInstance::getMessage(int& house, int& device, bool& state)
 void
 NexaRXInstance::loop()
 {
-  //DEBUG(0, NEXA_READ);
+  //DEBUGPIN(0, NEXA_READ);
 }
