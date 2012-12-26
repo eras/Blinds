@@ -3,7 +3,7 @@
 
 #include "NexaRX.h"
 
-#define DEBUG 1
+//#define DEBUG 1
 
 // // radio:
 #define NEXA_PORT PINC
@@ -32,6 +32,7 @@
 
 #define NEXA_READ !!(NEXA_PORT & NEXA_MASK)
 
+#ifdef DEBUG
 #define DEBUG0_PORT PORTB
 #define DEBUG0_DDR DDRB
 #define DEBUG0_IDX (0)
@@ -56,13 +57,16 @@ static bool debug_count;
 #define DEBUGFLIP(x) DEBUGPIN(x, (debug_value##x ^= 1))
 #define DEBUGRESET(x) DEBUGPIN(x, (debug_value##x = 0))
 
-#ifdef DEBUG
 struct DebugMessage {
   unsigned char idx;
   const char* msg;
   unsigned long value1, value2, value3, value4;
 };
-#endif
+#else // #ifdef DEBUG
+#define DEBUGPIN(x, y)
+#define DEBUGFLIP(x)
+#define DEBUGRESET(x)
+#endif // #ifdef DEBUG #else
 
 struct Code {
   unsigned char idx;
@@ -156,6 +160,7 @@ static unsigned previous_input_time; // when was this last input received
 static unsigned input_ones, input_zeroes; // keep track of the number of oens and zeroes during sample interval
 static bool     timer_adjusted; // did we just adjust the timer?
 
+#ifdef DEBUG
 extern void debug();
 extern void debug(const char*);
 extern void debug(unsigned);
@@ -238,9 +243,11 @@ static
 void
 setup_debug()
 {
+#ifdef DEBUG
   DEBUG0_DDR |= DEBUG0_MASK;
   DEBUG1_DDR |= DEBUG1_MASK;
   // DEBUG2_DDR |= DEBUG2_MASK;
+#endif
 }
 
 static
@@ -290,10 +297,12 @@ next_capture()
   stop_timer();
   reset_capture();
 
+#ifdef DEBUG
   debug_count = 0;
   //DEBUGRESET(0);
   DEBUGRESET(1);
   DEBUGFLIP(0);
+#endif // #ifdef DEBUG
 }
 
 void
@@ -302,8 +311,10 @@ NexaRXInstance::setup()
   // input pin
   NEXA_DDR &= ~NEXA_MASK;
 
+#ifdef DEBUG
   debug(timerPreload);
   debug();
+#endif
 
   cli();
 
@@ -424,10 +435,10 @@ ISR(NEXA_INT_vect)
   DEBUG_MESSAGE_SEND(("I2", input, t, previous_input_time, delta));
   previous_input_time = t;
   collect_input(delta);
+#ifdef DEBUG
   ++debug_count_io;
   ++debug_count;
-  //  if (debug_count == ) {
-    //}
+#endif
   previous_input_state = input;
 
   if (state == SS_NOT_CAPTURING) {
