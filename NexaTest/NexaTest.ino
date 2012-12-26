@@ -37,7 +37,6 @@ void loop()
   int device;
   bool state;
   if (NexaRX.getMessage(house, device, state)) {
-    noInterrupts();
     Serial.print("Got message: ");
     Serial.print(house);
     Serial.print(".");
@@ -45,7 +44,6 @@ void loop()
     Serial.print(" ");
     Serial.print(state ? "ON" : "OFF");
     Serial.println();
-    interrupts();
   }
   NexaRX.loop();
 }
