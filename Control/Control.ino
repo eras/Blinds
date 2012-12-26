@@ -21,7 +21,7 @@ const int sw2_pin = 7;
 
 #define SEQUENCE 2
 
-#define VERSION "0.3"
+#define VERSION "1.0"
 
 const int closed_cycles = 260;
 const int closed2_cycles = -260;
